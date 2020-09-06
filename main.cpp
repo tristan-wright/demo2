@@ -11,6 +11,7 @@ class Surface {
     public:
         bool out = false;
         char* outName = nullptr;
+        double beta;
 
         /**
          * Constructor method takes the size and temperature
@@ -22,22 +23,30 @@ class Surface {
             Surface::size = size;
             Surface::temp = temp;
             surface = create_surface();
+            beta = 1 / boltzmann * temp;
         }
 
         void output_config(ostream &output) const;
         void save();
         int calculate_magnetism();
         int calculate_energy();
+        int random_point();
+        int energy_neighbours(int x, int y);
+        int get_state(int x, int y);
+        void set_state(int x, int y, int new_state);
 
     private:
         int** surface;
         int size;
         int temp;
+        const double boltzmann = 1.3806503e-23;
+
+
 
         int** create_surface() const;
         void output_surface(ostream &output) const;
-        int state(int x, int y);
-        int energy_neighbours(int x, int y);
+
+
 };
 
 /**
@@ -61,7 +70,7 @@ void Surface::output_surface(ostream& output) const{
 }
 
 /**
-* Uses Bernoulli distribution to determine the state
+* Uses Bernoulli distribution to determine the get_state
 * of the spin for each atom. Either +/- 1.
 * @param size The size of the matrix.
 * @return
@@ -95,8 +104,9 @@ void Surface::save() {
         return;
     }
     std::ofstream file;
-    file.open(outName);
+    file.open(outName, ios_base::app);
     output_surface(file);
+    file << "\n";
     file.close();
 }
 
@@ -110,19 +120,23 @@ void Surface::output_config(ostream& output) const {
 }
 
 /**
- * Finds the current state of the vertex in
+ * Finds the current get_state of the vertex in
  * that position.
  * @param x The horizontal coordinate of the vertex.
  * @param y The vertical coordinate of the vertex.
- * @return The current state of the vertex.
+ * @return The current get_state of the vertex.
  */
-int Surface::state(int x, int y) {
+int Surface::get_state(int x, int y) {
     if (x < 0) {
         x = size + x;
     } else if (y < 0) {
         y = size + y;
     }
     return surface[y][x];
+}
+
+void Surface::set_state(int x, int y, int new_state) {
+    surface[y][x] *= new_state;
 }
 
 /**
@@ -134,10 +148,10 @@ int Surface::state(int x, int y) {
  */
 int Surface::energy_neighbours(int x, int y) {
     int eN = 0;
-    eN += state((x + 1) % size, y);
-    eN += state((x - 1) % size, y);
-    eN += state(x, (y + 1) % size);
-    eN += state(x, (y - 1) % size);
+    eN += get_state((x + 1) % size, y);
+    eN += get_state((x - 1) % size, y);
+    eN += get_state(x, (y + 1) % size);
+    eN += get_state(x, (y - 1) % size);
     return eN;
 }
 
@@ -149,7 +163,7 @@ int Surface::calculate_energy() {
     int totalEnergy = 0;
     for (int y = 0; y < size; ++y) {
         for (int x = 0; x < size; ++x) {
-            totalEnergy += Surface::state(x, y) * -(Surface::energy_neighbours(x, y));
+            totalEnergy += Surface::get_state(x, y) * -(Surface::energy_neighbours(x, y));
         }
     }
     return totalEnergy;
@@ -163,17 +177,48 @@ int Surface::calculate_magnetism() {
     int totalMagnetism = 0;
     for (int x = 0; x < size; ++x) {
         for (int y = 0; y < size; ++y) {
-            totalMagnetism += Surface::state(x, y);
+            totalMagnetism += Surface::get_state(x, y);
         }
     }
     return totalMagnetism;
 }
 
+int Surface::random_point() {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(0, size-1);
+    return dis(gen);
+}
+
+float random_real() {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(0, 1);
+    return dis(gen);
+}
+
+
 int simulate(long int n, Surface lattice) {
     lattice.save();
     for (int i = 0; i < n; ++i) {
         cout << "Energy: " << lattice.calculate_energy() << " Mag: :" << lattice.calculate_magnetism() << endl;
+
+        int coords[2] = {lattice.random_point(), lattice.random_point()};
+
+        int state = lattice.get_state(coords[0], coords[1]);
+        int neighbours = lattice.energy_neighbours(coords[0], coords[1]);
+
+        int energy = 2 * state * neighbours;
+
+        if (energy < 0) {
+            lattice.set_state(coords[0], coords[1], -1);
+        } else if (random_real() < exp(-energy/lattice.beta)) {
+            lattice.set_state(coords[0], coords[1], -1);
+        }
+
+        cout << state << endl;
     }
+    lattice.save();
     return 0;
 }
 

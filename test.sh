@@ -1,2 +1,2 @@
-./cmake-build-debug/ising 15 50 30 test.out
+./cmake-build-debug/ising 50000 100 0.001 test.out
 python3 display.py
