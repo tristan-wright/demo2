@@ -24,9 +24,10 @@ class Surface {
             surface = create_surface();
         }
 
-        void output_config(ostream &output);
+        void output_config(ostream &output) const;
         void save();
-        int get_neighbours(int x, int y);
+        int calculate_magnetism();
+        int calculate_energy();
 
     private:
         int** surface;
@@ -35,6 +36,8 @@ class Surface {
 
         int** create_surface() const;
         void output_surface(ostream &output) const;
+        int state(int x, int y);
+        int energy_neighbours(int x, int y);
 };
 
 /**
@@ -102,16 +105,76 @@ void Surface::save() {
  * to the given std::ostream.
  * @param output A std:ostream.
  */
-void Surface::output_config(ostream& output) {
+void Surface::output_config(ostream& output) const {
     output << size << ',' << temp << std::endl;
 }
 
+/**
+ * Finds the current state of the vertex in
+ * that position.
+ * @param x The horizontal coordinate of the vertex.
+ * @param y The vertical coordinate of the vertex.
+ * @return The current state of the vertex.
+ */
+int Surface::state(int x, int y) {
+    if (x < 0) {
+        x = size + x;
+    } else if (y < 0) {
+        y = size + y;
+    }
+    return surface[y][x];
+}
 
+/**
+ * Calculates the current energy of the neighbours
+ * located adjacent to the given coordinates.
+ * @param x The horizontal coordinate of the vertex.
+ * @param y The vertical coordinate of the vertex.
+ * @return The total energy of the adjacent vertices.
+ */
+int Surface::energy_neighbours(int x, int y) {
+    int eN = 0;
+    eN += state((x + 1) % size, y);
+    eN += state((x - 1) % size, y);
+    eN += state(x, (y + 1) % size);
+    eN += state(x, (y - 1) % size);
+    return eN;
+}
+
+/**
+ * Calculates the total energy of the surface.
+ * @return The total energy of the surface.
+ */
+int Surface::calculate_energy() {
+    int totalEnergy = 0;
+    for (int y = 0; y < size; ++y) {
+        for (int x = 0; x < size; ++x) {
+            totalEnergy += Surface::state(x, y) * -(Surface::energy_neighbours(x, y));
+        }
+    }
+    return totalEnergy;
+}
+
+/**
+ * Calculates the total magnetism of the surface.
+ * @return The total magnetism of the surface.
+ */
+int Surface::calculate_magnetism() {
+    int totalMagnetism = 0;
+    for (int x = 0; x < size; ++x) {
+        for (int y = 0; y < size; ++y) {
+            totalMagnetism += Surface::state(x, y);
+        }
+    }
+    return totalMagnetism;
+}
 
 int simulate(long int n, Surface lattice) {
+    lattice.save();
     for (int i = 0; i < n; ++i) {
-        lattice.save();
+        cout << "Energy: " << lattice.calculate_energy() << " Mag: :" << lattice.calculate_magnetism() << endl;
     }
+    return 0;
 }
 
 int main(int argc, char* argv[]) {
