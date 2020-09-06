@@ -9,9 +9,8 @@ using namespace std;
 
 class Surface {
     public:
-        int** surface;
-        int size;
-        int temp;
+        bool out = false;
+        char* outName = nullptr;
 
         /**
          * Constructor method takes the size and temperature
@@ -25,14 +24,17 @@ class Surface {
             surface = create_surface();
         }
 
-
         void output_config(ostream &output);
-        void save(char* filename);
+        void save();
+        int get_neighbours(int x, int y);
 
     private:
+        int** surface;
+        int size;
+        int temp;
+
         int** create_surface() const;
         void output_surface(ostream &output) const;
-
 };
 
 /**
@@ -42,21 +44,17 @@ class Surface {
 * @param size The size of the surface.
 */
 void Surface::output_surface(ostream& output) const{
-    //output << '[';
     for (int i = 0; i < size; ++i) {
-        //output << '[';
         for (int j = 0; j < size; ++j) {
             output << surface[j][i];
             if (j != size-1) {
                 output << ' ';
             }
         }
-        //output << "]";
         if (i != size-1) {
             output << "; ";
         }
     }
-    //output << ']';
 }
 
 /**
@@ -89,10 +87,12 @@ int** Surface::create_surface() const{
  * Outputs the surface to a given file.
  * @param filename Name of the output file.
  */
-void Surface::save(char* filename) {
+void Surface::save() {
+    if (!out) {
+        return;
+    }
     std::ofstream file;
-    file.open(filename);
-    //output_config(file);
+    file.open(outName);
     output_surface(file);
     file.close();
 }
@@ -106,8 +106,12 @@ void Surface::output_config(ostream& output) {
     output << size << ',' << temp << std::endl;
 }
 
-int simulate(Surface lattice) {
 
+
+int simulate(long int n, Surface lattice) {
+    for (int i = 0; i < n; ++i) {
+        lattice.save();
+    }
 }
 
 int main(int argc, char* argv[]) {
@@ -123,11 +127,12 @@ int main(int argc, char* argv[]) {
     }
 
     Surface lattice(atoi(argv[2]), atoi(argv[3]));
-    lattice.output_config(std::cout);
 
     if (argc == 5) {
-        lattice.save(argv[4]);
+        lattice.out = true;
+        lattice.outName = argv[4];
     }
+    lattice.output_config(std::cout);
 
-    return simulate(lattice);
+    return simulate(n, lattice);
 }
