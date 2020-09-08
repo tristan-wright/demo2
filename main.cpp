@@ -8,44 +8,48 @@
 using namespace std;
 
 class Surface {
-    public:
-        bool out = false;
-        char* outName = nullptr;
-        double beta;
+public:
+    /**
+     * Constructor method takes the size and temperature
+     * of the surface. It then creates the N^2 surface.
+     * @param size The size of the N^2 lattice.
+     * @param temp  The temperature of the lattice.
+     */
+    Surface(long int loops, int size, double temp) {
+        Surface::size = size;
+        Surface::temp = temp;
+        Surface::loops = loops;
+        surface = create_surface();
+        beta = boltzmann * temp;
+        avgEnergy = new int[loops];
+        avgMag = new int[loops];
+    }
 
-        /**
-         * Constructor method takes the size and temperature
-         * of the surface. It then creates the N^2 surface.
-         * @param size The size of the N^2 lattice.
-         * @param temp  The temperature of the lattice.
-         */
-        Surface(int size, int temp) {
-            Surface::size = size;
-            Surface::temp = temp;
-            surface = create_surface();
-            beta = 1 / boltzmann * temp;
-        }
+    void output_config(ostream &output) const;
+    void save();
+    int calculate_magnetism();
+    int calculate_energy();
+    int random_point() const;
+    int energy_neighbours(int x, int y);
+    int get_state(int x, int y);
+    void set_state(int x, int y, int new_state);
+    void output_eng_mag(ostream& output) const;
 
-        void output_config(ostream &output) const;
-        void save();
-        int calculate_magnetism();
-        int calculate_energy();
-        int random_point();
-        int energy_neighbours(int x, int y);
-        int get_state(int x, int y);
-        void set_state(int x, int y, int new_state);
+    bool out = false;
+    char* outName = nullptr;
+    double beta;
+    int size;
+    int* avgEnergy;
+    int* avgMag;
+    int loops;
 
-    private:
-        int** surface;
-        int size;
-        int temp;
-        const double boltzmann = 1.3806503e-23;
+private:
+    const double boltzmann = 1.3806503;
+    int** create_surface() const;
+    void output_surface(ostream &output) const;
 
-
-
-        int** create_surface() const;
-        void output_surface(ostream &output) const;
-
+    int** surface;
+    double temp;
 
 };
 
@@ -118,6 +122,21 @@ void Surface::save() {
 void Surface::output_config(ostream& output) const {
     output << size << ',' << temp << std::endl;
 }
+/**
+ * Outputs the total energy and magnetism of the surface
+ * at a given instance.
+ * @param output A std:ostream.
+ */
+void Surface::output_eng_mag(ostream& output) const {
+    for (int i = 0; i < loops; ++i) {
+        output << avgEnergy[i] << ',';
+    }
+    output << endl;
+    for (int j = 0; j < loops; ++j) {
+        output << avgMag[j] << ',';
+    }
+    output << endl;
+}
 
 /**
  * Finds the current get_state of the vertex in
@@ -135,6 +154,12 @@ int Surface::get_state(int x, int y) {
     return surface[y][x];
 }
 
+/**
+ * Sets the spin state of a given coordinate.
+ * @param x The x position of the coordinate.
+ * @param y The y position of the coordinate.
+ * @param new_state
+ */
 void Surface::set_state(int x, int y, int new_state) {
     surface[y][x] *= new_state;
 }
@@ -149,9 +174,9 @@ void Surface::set_state(int x, int y, int new_state) {
 int Surface::energy_neighbours(int x, int y) {
     int eN = 0;
     eN += get_state((x + 1) % size, y);
-    eN += get_state((x - 1) % size, y);
+    eN += get_state((x - 1), y);
     eN += get_state(x, (y + 1) % size);
-    eN += get_state(x, (y - 1) % size);
+    eN += get_state(x, (y - 1));
     return eN;
 }
 
@@ -183,13 +208,21 @@ int Surface::calculate_magnetism() {
     return totalMagnetism;
 }
 
-int Surface::random_point() {
+/**
+ * Generates a random point on the surface.
+ * @return The generate random point on the surface.
+ */
+int Surface::random_point() const {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_int_distribution<> dis(0, size-1);
     return dis(gen);
 }
 
+/**
+ * Generates a random number between 0 and 1.
+ * @return The random number.
+ */
 float random_real() {
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -197,50 +230,83 @@ float random_real() {
     return dis(gen);
 }
 
+/**
+ * Main calculations that are made to determine the spin state
+ * of a position.
+ * @param lattice The Surface class instance which hold the current
+ *                  state.
+ * @param coords The coordinates to check.
+ */
+void calculate_spin(Surface lattice, int coords[2]) {
+    int state = lattice.get_state(coords[0], coords[1]);
+    int neighbours = lattice.energy_neighbours(coords[0], coords[1]);
 
-int simulate(long int n, Surface lattice) {
-    lattice.save();
-    for (int i = 0; i < n; ++i) {
-        cout << "Energy: " << lattice.calculate_energy() << " Mag: :" << lattice.calculate_magnetism() << endl;
+    int energy = 2 * state * neighbours;
 
-        int coords[2] = {lattice.random_point(), lattice.random_point()};
+    float random = random_real();
+    double diff = -energy / lattice.beta * 10 * 23; // Adding back adjusting K value.
+    double thresh = exp(diff);
 
-        int state = lattice.get_state(coords[0], coords[1]);
-        int neighbours = lattice.energy_neighbours(coords[0], coords[1]);
 
-        int energy = 2 * state * neighbours;
-
-        if (energy < 0) {
-            lattice.set_state(coords[0], coords[1], -1);
-        } else if (random_real() < exp(-energy/lattice.beta)) {
-            lattice.set_state(coords[0], coords[1], -1);
-        }
-
-        cout << state << endl;
+    if (energy <= 0) {
+        lattice.set_state(coords[0], coords[1], -1);
+    } else if (random < thresh) {
+        lattice.set_state(coords[0], coords[1], -1);
     }
-    lattice.save();
-    return 0;
 }
 
+/**
+ * Runs the simulation keeping track of various states.
+ * @param lattice The lattice to simulate.
+ * @return The exit state of the application.
+ */
+int simulate(Surface lattice) {
+    lattice.save();
+    for (int i = 0; i < lattice.loops; ++i) {
+        lattice.avgEnergy[i] = lattice.calculate_energy();
+        lattice.avgMag[i] = lattice.calculate_magnetism();
+
+        for (int j = 0; j < lattice.size; ++j) {
+            for (int k = 0; k < lattice.size; ++k) {
+
+
+                int coords[2] = {j,k};
+                calculate_spin(lattice, coords);
+            }
+        }
+
+    }
+    lattice.output_eng_mag(cout);
+    lattice.save();
+    return EXIT_SUCCESS;
+}
+
+/**
+ * Main function of the application. Handles boundry and error checking.
+ * Will initiate the simulation if everything is correct.
+ * @param argc The number of arguments.
+ * @param argv The string representation array of the arguments.
+ * @return The exit status of the simulation.
+ */
 int main(int argc, char* argv[]) {
     if (argc < 4 || argc > 5) {
         std::cout << "Usage: ./ising n size temperature {output}" << std::endl;
-        return 1;
+        return EXIT_FAILURE;
     }
 
-    long int n = strtol(argv[1], 0, 10);
+    int n = atoi(argv[1]);
     if (n <= 0) {
         std::cout << "'n' has to be a positive integer" << std::endl;
-        return 1;
+        return EXIT_FAILURE;
     }
 
-    Surface lattice(atoi(argv[2]), atoi(argv[3]));
+    Surface lattice(n, atoi(argv[2]), strtod(argv[3], nullptr));
 
     if (argc == 5) {
         lattice.out = true;
         lattice.outName = argv[4];
     }
-    lattice.output_config(std::cout);
+    lattice.output_config(std::cerr);
 
-    return simulate(n, lattice);
+    return simulate(lattice);
 }
