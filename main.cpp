@@ -1,8 +1,6 @@
 #include <iostream>
 #include <cstdlib>
-#include <ctime>
 #include <random>
-#include <iostream>
 #include <fstream>
 
 using namespace std;
@@ -15,7 +13,7 @@ public:
      * @param size The size of the N^2 lattice.
      * @param temp  The temperature of the lattice.
      */
-    Surface(long int loops, int size, double temp) {
+    Surface(int loops, int size, double temp) {
         Surface::size = size;
         Surface::temp = temp;
         Surface::loops = loops;
@@ -34,6 +32,7 @@ public:
     int get_state(int x, int y);
     void set_state(int x, int y, int new_state);
     void output_eng_mag(ostream& output) const;
+    bool complete = false;
 
     bool out = false;
     char* outName = nullptr;
@@ -50,7 +49,6 @@ private:
 
     int** surface;
     double temp;
-
 };
 
 /**
@@ -111,6 +109,9 @@ void Surface::save() {
     file.open(outName, ios_base::app);
     output_surface(file);
     file << "\n";
+    if (complete) {
+        output_eng_mag(file);
+    }
     file.close();
 }
 
@@ -129,11 +130,17 @@ void Surface::output_config(ostream& output) const {
  */
 void Surface::output_eng_mag(ostream& output) const {
     for (int i = 0; i < loops; ++i) {
-        output << avgEnergy[i] << ',';
+        output << avgEnergy[i];
+        if (i != loops - 1) {
+            output << ' ';
+        }
     }
     output << endl;
     for (int j = 0; j < loops; ++j) {
-        output << avgMag[j] << ',';
+        output << avgMag[j];
+        if (j != loops - 1) {
+            output << ' ';
+        }
     }
     output << endl;
 }
@@ -242,15 +249,11 @@ void calculate_spin(Surface lattice, int coords[2]) {
     int neighbours = lattice.energy_neighbours(coords[0], coords[1]);
 
     int energy = 2 * state * neighbours;
-
     float random = random_real();
-    double diff = -energy / lattice.beta * 10 * 23; // Adding back adjusting K value.
+    double diff = -energy / lattice.beta * 10 * 23; // Adding back decimal place Boltzmann.
     double thresh = exp(diff);
 
-
-    if (energy <= 0) {
-        lattice.set_state(coords[0], coords[1], -1);
-    } else if (random < thresh) {
+    if (energy <= 0 || random < thresh) {
         lattice.set_state(coords[0], coords[1], -1);
     }
 }
@@ -268,15 +271,12 @@ int simulate(Surface lattice) {
 
         for (int j = 0; j < lattice.size; ++j) {
             for (int k = 0; k < lattice.size; ++k) {
-
-
                 int coords[2] = {j,k};
                 calculate_spin(lattice, coords);
             }
         }
-
     }
-    lattice.output_eng_mag(cout);
+    lattice.complete = true;
     lattice.save();
     return EXIT_SUCCESS;
 }
@@ -306,7 +306,6 @@ int main(int argc, char* argv[]) {
         lattice.out = true;
         lattice.outName = argv[4];
     }
-    lattice.output_config(std::cerr);
 
     return simulate(lattice);
 }
