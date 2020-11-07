@@ -12,6 +12,7 @@ class Surface {
 public:
     Surface(char* name, int loops, int size, double temp);
     void save();
+    void clear();
     int calculate_magnetism();
     int calculate_energy();
     void calculate_spin(int coords[2]);

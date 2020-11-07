@@ -73,13 +73,25 @@ void Surface::save() {
     if (!out) {
         return;
     }
-    std::ofstream file;
+    ofstream file;
     file.open(outName, ios_base::app);
     output_surface(file);
     file << "\n";
     if (complete) {
         output_eng_mag(file);
     }
+    file.close();
+}
+
+/**
+ * Clears the opened file if it already exists.
+ */
+void Surface::clear() {
+    if (!out) {
+        return;
+    }
+    ofstream file;
+    file.open(outName, ofstream::out | ofstream::trunc);
     file.close();
 }
 

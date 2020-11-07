@@ -8,6 +8,7 @@
 #include "serial.h"
 #include "surface.h"
 #include "omp.h"
+#include "cuda.h"
 
 /**
  * Initialisation of clocks to measure the runtime of the different
@@ -16,10 +17,12 @@
  * @return The EXIT_STATUS of the simulation.
  */
 int initialise(Surface lattice) {
+    lattice.clear();
     lattice.save();
     auto StartTime = std::chrono::high_resolution_clock::now();
     int status = simulate(lattice);
     auto FinishTime = std::chrono::high_resolution_clock::now();
+    lattice.complete = true;
     lattice.save();
     auto TotalTime = std::chrono::duration_cast<std::chrono::microseconds>(FinishTime - StartTime);
     cout << lattice.name << ":" << endl;
