@@ -8,7 +8,8 @@ using namespace std;
  * @param size The size of the N^2 lattice.
  * @param temp  The temperature of the lattice.
  */
-Surface::Surface(int loops, int size, double temp) {
+Surface::Surface(char* name, int loops, int size, double temp) {
+    Surface::name = name;
     Surface::size = size;
     Surface::temp = temp;
     Surface::loops = loops;

@@ -2,16 +2,37 @@
 #include <cstdlib>
 #include <random>
 #include <fstream>
+#include <chrono>
+#include <iomanip>
 
 #include "serial.h"
 #include "surface.h"
+#include "omp.h"
+
+/**
+ * Initialisation of clocks to measure the runtime of the different
+ * parallelization techniques.
+ * @param lattice The Surface object containing the lattice configuration and functions.
+ * @return The EXIT_STATUS of the simulation.
+ */
+int initialise(Surface lattice) {
+    lattice.save();
+    auto StartTime = std::chrono::high_resolution_clock::now();
+    int status = simulate(lattice);
+    auto FinishTime = std::chrono::high_resolution_clock::now();
+    lattice.save();
+    auto TotalTime = std::chrono::duration_cast<std::chrono::microseconds>(FinishTime - StartTime);
+    cout << lattice.name << ":" << endl;
+    cout << "Total time: " << std::setw(12) << TotalTime.count() << " us" << endl;
+    return status;
+}
 
 /**
  * Main function of the application. Handles boundry and error checking.
  * Will initiate the simulation if everything is correct.
  * @param argc The number of arguments.
  * @param argv The string representation array of the arguments.
- * @return The exit status of the simulation.
+ * @return The EXIT_STATUS of the simulation.
  */
 int main(int argc, char* argv[]) {
     if (argc < 4 || argc > 5) {
@@ -25,12 +46,12 @@ int main(int argc, char* argv[]) {
         return EXIT_FAILURE;
     }
 
-    Surface lattice(n, atoi(argv[2]), strtod(argv[3], nullptr));
+    Surface lattice(argv[0], n, atoi(argv[2]), strtod(argv[3], nullptr));
 
     if (argc == 5) {
         lattice.out = true;
         lattice.outName = argv[4];
     }
 
-    return simulate(lattice);
+    return initialise(lattice);
 }

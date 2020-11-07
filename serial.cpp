@@ -6,7 +6,6 @@
  * @return The exit state of the application.
  */
 int simulate(Surface lattice) {
-    lattice.save();
     for (int i = 0; i < lattice.loops; ++i) {
         lattice.avgEnergy[i] = lattice.calculate_energy();
         lattice.avgMag[i] = lattice.calculate_magnetism();
@@ -18,7 +17,5 @@ int simulate(Surface lattice) {
             }
         }
     }
-    lattice.complete = true;
-    lattice.save();
     return EXIT_SUCCESS;
 }

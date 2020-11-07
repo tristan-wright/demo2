@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy
+import sys
 
 if __name__ == '__main__':
-    file = open('test.out', 'r')
+    file = open(sys.argv[1], 'r')
     lines = file.readlines()
     titles = {1: "Starting State Matrix", 2: "Final State Matrix", 3: "Energy vs Time", 4: "Magnetism vs Time"}
     labels = {3: "Energy", 4: "Magnetism"}

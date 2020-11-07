@@ -10,7 +10,7 @@ using namespace std;
 
 class Surface {
 public:
-    Surface(int loops, int size, double temp);
+    Surface(char* name, int loops, int size, double temp);
     void save();
     int calculate_magnetism();
     int calculate_energy();
@@ -27,6 +27,7 @@ public:
     int* avgEnergy;
     int* avgMag;
     int loops;
+    char* name;
 
 private:
     int random_point() const;
