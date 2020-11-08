@@ -10,7 +10,7 @@ int simulate(Surface lattice) {
         #pragma omp parallel for
         for (int j = 0; j < lattice.size; ++j) {
             for (int k = 0; k < lattice.size; ++k) {
-                int coords[2] = {j,k};
+                int coords[2] = {k,j};
                 lattice.calculate_spin(coords);
             }
         }

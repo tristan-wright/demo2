@@ -2,73 +2,64 @@
 
 int world_size;
 int my_rank;
-int rows_per_slaves;
+int rows_per_slave;
 
-int spins(Surface lattice) {
-    for (int j = 0; j < lattice.size; ++j) {
-        for (int k = 0; k < lattice.size; ++k) {
-            int coords[2] = {j,k};
-            lattice.calculate_spin(coords);
-        }
-    }
-
-    return EXIT_SUCCESS;
-}
-
+/**
+ * Handles syncing the master processes configuration of
+ * the lattice with all other child processes.
+ * @param lattice
+ */
 void master_to_slaves_sync(Surface lattice) {
     if (my_rank == 0) {
-        //lattice.output_surface(cout);
         for (int i = 1; i < world_size; ++i) {
             for (int y = 0; y < lattice.size; ++y) {
                 MPI_Send(lattice.surface[y], lattice.size, MPI_INT, i, y, MPI_COMM_WORLD);
             }
         }
-
-
     } else {
         for (int y = 0; y < lattice.size; ++y) {
             MPI_Recv(lattice.surface[y], lattice.size, MPI_INT, 0, y, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
-
-        //lattice.output_surface(cerr);
     }
 }
 
 
 /**
+ * Initiates the simulation of the ising model. Controls the required
+ * communication between various processes in order to accurately
+ * model the image.
+ * @param lattice
+ * @return
  */
 int simulate(Surface lattice) {
-    //cerr << "RANK: " << my_rank;
+    int start = (my_rank - 1) * rows_per_slave;
+    int finish = start + rows_per_slave;
+
     for (int i = 0; i < lattice.loops; ++i) {
         if (my_rank == 0) {
             lattice.avgEnergy[i] = lattice.calculate_energy();
             lattice.avgMag[i] = lattice.calculate_magnetism();
         } else {
-            for (int j = 0; j < lattice.size; ++j) {
+
+            for (int j = start; j < finish; ++j) {
                 for (int k = 0; k < lattice.size; ++k) {
-                    int coords[2] = {j,k};
+                    int coords[2] = {k,j};
                     lattice.calculate_spin(coords);
                 }
+                MPI_Send(lattice.surface[j], lattice.size, MPI_INT, 0, j, MPI_COMM_WORLD);
             }
         }
 
         if (my_rank == 0) {
             for (int y = 0; y < lattice.size; ++y) {
-                MPI_Recv(lattice.surface[y], lattice.size, MPI_INT, 1, y, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+                MPI_Recv(lattice.surface[y], lattice.size, MPI_INT,
+                         MPI_ANY_SOURCE, y, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
             }
-            lattice.output_surface(cout);
-
-        } else {
-            for (int y = 0; y < lattice.size; ++y) {
-                MPI_Send(lattice.surface[y], lattice.size, MPI_INT, 0, y, MPI_COMM_WORLD);
-            }
-            lattice.output_surface(cerr);
         }
-        MPI_Barrier(MPI_COMM_WORLD);
+
         master_to_slaves_sync(lattice);
         MPI_Barrier(MPI_COMM_WORLD);
     }
-
     return EXIT_SUCCESS;
 }
 
@@ -94,13 +85,9 @@ int initialise(Surface lattice) {
         lattice.complete = true;
         lattice.save();
         auto TotalTime = std::chrono::duration_cast<std::chrono::microseconds>(FinishTime - StartTime);
-        //cout << lattice.name << ":" << endl;
-        //cout << "Total time: " << std::setw(12) << TotalTime.count() << " us" << endl;
+        cout << lattice.name << ":" << endl;
+        cout << "Total time: " << std::setw(12) << TotalTime.count() << " us" << endl;
     }
-
-
-
-
     return status;
 }
 
@@ -116,7 +103,7 @@ int main(int argc, char* argv[]) {
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &world_size);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-    rows_per_slaves = world_size - 1;
+
 
 
     if (argc < 4 || argc > 5) {
@@ -143,8 +130,8 @@ int main(int argc, char* argv[]) {
         lattice.outName = argv[4];
     }
 
+    rows_per_slave = rows / (world_size - 1);
     master_to_slaves_sync(lattice);
-
     status = initialise(lattice);
 
     MPI_Finalize();
