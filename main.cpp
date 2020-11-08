@@ -6,7 +6,6 @@
 #include <iomanip>
 
 #include "sim_serial.h"
-#include "sim_mpi.h"
 #include "sim_omp.h"
 #include "sim_cuda.h"
 #include "surface.h"

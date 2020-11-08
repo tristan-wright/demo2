@@ -1,4 +1,4 @@
-SOURCES = main.cpp surface.cpp
+SOURCES = surface.cpp
 FLAGS = -O
 
 all:
