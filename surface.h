@@ -16,6 +16,7 @@ public:
     int calculate_magnetism();
     int calculate_energy();
     void calculate_spin(int coords[2]);
+    void output_surface(ostream &output) const;
 
     // Used to debug surface configuration
     void output_config(ostream &output) const;
@@ -29,6 +30,9 @@ public:
     int* avgMag;
     int loops;
     char* name;
+    int** surface;
+    const double boltzmann = 1.3806503;
+    double temp;
 
 private:
     int random_point() const;
@@ -37,12 +41,7 @@ private:
     void set_state(int x, int y, int new_state);
     void output_eng_mag(ostream &output) const;
     int** create_surface() const;
-    void output_surface(ostream &output) const;
     float random_real();
-
-    const double boltzmann = 1.3806503;
-    int** surface;
-    double temp;
 };
 
 #endif //ISING_SURFACE_H
