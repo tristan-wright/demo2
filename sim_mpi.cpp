@@ -58,7 +58,7 @@ int simulate(Surface lattice) {
         }
 
         master_to_slaves_sync(lattice);
-        MPI_Barrier(MPI_COMM_WORLD);
+        //MPI_Barrier(MPI_COMM_WORLD);
     }
     return EXIT_SUCCESS;
 }

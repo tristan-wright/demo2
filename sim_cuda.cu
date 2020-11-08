@@ -1,6 +1,6 @@
 #include "sim_cuda.h"
 
-Surface* mLattice;
+
 
 // Error handling function from "cosc3500/cuda/example1-gpu.cu"
 void checkError(cudaError_t e) {
@@ -12,10 +12,10 @@ void checkError(cudaError_t e) {
 
 __global__
 void spins(Surface* lattice) {
-    for (int j = 0; j < lattice.size; ++j) {
-        for (int k = 0; k < lattice.size; ++k) {
+    for (int j = 0; j < lattice->size; ++j) {
+        for (int k = 0; k < lattice->size; ++k) {
             int coords[2] = {k,j};
-            lattice.calculate_spin(coords);
+            //lattice->calculate_spin(coords);
         }
     }
 }
@@ -24,17 +24,24 @@ void spins(Surface* lattice) {
 /**
  */
 int simulate(Surface lattice) {
+    Surface* mLattice;
+
     for (int i = 0; i < lattice.loops; ++i) {
         lattice.avgEnergy[i] = lattice.calculate_energy();
         lattice.avgMag[i] = lattice.calculate_magnetism();
 
-
         checkError(cudaMalloc((void **)&mLattice, sizeof(Surface)));
-        checkError(cudaMemcpy(mLattice, lattice, sizeof(Surface), cudaMemcpyHostToDevice));
+        checkError(cudaMemcpy(&mLattice, &lattice, sizeof(Surface), cudaMemcpyHostToDevice));
 
+        int Threads = 32;
+        int Blocks = (lattice.size+Threads-1)/Threads;
+
+        spins<<<Blocks, Threads>>>(mLattice);
+
+        checkError(cudaMemcpy(&lattice, &mLattice, sizeof(Surface), cudaMemcpyDeviceToHost));
         cudaFree(mLattice);
 
-        spins(&lattice);
+
     }
     return EXIT_SUCCESS;
 }
