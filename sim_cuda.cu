@@ -1,4 +1,4 @@
-#include "cuda.h"
+#include "sim_cuda.h"
 
 Surface* mLattice;
 

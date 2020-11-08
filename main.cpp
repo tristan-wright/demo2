@@ -5,10 +5,11 @@
 #include <chrono>
 #include <iomanip>
 
-#include "serial.h"
+#include "sim_serial.h"
+#include "sim_mpi.h"
+#include "sim_omp.h"
+#include "sim_cuda.h"
 #include "surface.h"
-#include "omp.h"
-#include "cuda.h"
 
 /**
  * Initialisation of clocks to measure the runtime of the different

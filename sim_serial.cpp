@@ -1,4 +1,4 @@
-#include "serial.h"
+#include "sim_serial.h"
 
 /**
  * Runs the simulation keeping track of various states.

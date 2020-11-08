@@ -1,13 +1,14 @@
-#include "omp.h"
+#include <mpi.h>
+#include "sim_mpi.h"
 
 /**
  */
 int simulate(Surface lattice) {
+    MPI_Init(nullptr, nullptr);
     for (int i = 0; i < lattice.loops; ++i) {
         lattice.avgEnergy[i] = lattice.calculate_energy();
         lattice.avgMag[i] = lattice.calculate_magnetism();
 
-        #pragma omp parallel for
         for (int j = 0; j < lattice.size; ++j) {
             for (int k = 0; k < lattice.size; ++k) {
                 int coords[2] = {j,k};
@@ -15,5 +16,6 @@ int simulate(Surface lattice) {
             }
         }
     }
+    MPI_Finalize();
     return EXIT_SUCCESS;
 }
