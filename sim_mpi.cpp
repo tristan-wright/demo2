@@ -40,7 +40,6 @@ int simulate(Surface lattice) {
             lattice.avgEnergy[i] = lattice.calculate_energy();
             lattice.avgMag[i] = lattice.calculate_magnetism();
         } else {
-
             for (int j = start; j < finish; ++j) {
                 for (int k = 0; k < lattice.size; ++k) {
                     int coords[2] = {k,j};
@@ -58,7 +57,6 @@ int simulate(Surface lattice) {
         }
 
         master_to_slaves_sync(lattice);
-        //MPI_Barrier(MPI_COMM_WORLD);
     }
     return EXIT_SUCCESS;
 }
