@@ -12,6 +12,4 @@
 #define ISING_SIM_MPI_H
 
 
-
-
 #endif //ISING_SIM_MPI_H
