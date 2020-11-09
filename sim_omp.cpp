@@ -1,6 +1,9 @@
 #include "sim_omp.h"
 
 /**
+ * Runs the simulation using OpenMP parallelism.
+ * @param lattice The lattice to simulate.
+ * @return The exit state of the application.
  */
 int simulate(Surface lattice) {
     for (int i = 0; i < lattice.loops; ++i) {
